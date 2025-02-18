@@ -6,6 +6,9 @@ else
 end
 
 roi_exist=0;
+autoroi = true; % T.O. Add option to define ROIs in a more automated way
+r = 5; % mm, radius of initial masks
+
 %% Load B0 data from twix
 %field_twix = mapVBVD('meas_MID00098_FID09057_gre_field_mapping_xyz0.dat');
 %field_twix = mapVBVD('~/Data/7T_ASL_Tests/2025-01-23/Raw_data/meas_MID00067_FID39515_to_gre_field_mapping_dyn_shim_online.dat');
@@ -34,6 +37,8 @@ CS = ones(nx,ny,nz);
 H  = [PX(:) PY(:) PZ(:) CS(:)];
 
 %%  draw ROI
+RotIndex=3;
+
 if roi_exist
     load('mask_shim.mat')
 
@@ -41,9 +46,13 @@ if roi_exist
     %     ratio=2*pi*dte/1000;
     %     scale=350;
     %     imshow(rot90((img_phz2-img_phz1).*mask_m/ratio,RotIndex),[-scale scale]);colorbar;colormap 'jet'
-else
+
+elseif autoroi % More rapid ROI selection from single points
+    mask_m = rot90(point_mask(rot90(img_mag,RotIndex),10,0.9),-RotIndex);
+    save('mask_shim.mat',"mask_m")
+
+else  % Standard ROI drawing
     %     mask_m0 = sum(draw_mask(rot90(img_tof(:,:,slcInd),RotIndex),0.5),3);
-    RotIndex=3;
     for i=1:nz
         mask_m0 = sum(draw_mask(rot90(img_mag(:,:,i),RotIndex),0.5),3);
         mask_m(:,:,i)=rot90(mask_m0,-RotIndex);
