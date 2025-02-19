@@ -7,7 +7,8 @@ end
 
 roi_exist=0;
 autoroi = true; % T.O. Add option to define ROIs in a more automated way
-r = 5; % mm, radius of initial masks
+r_mm = 5; % mm, radius of initial masks
+Frac = 0.9; % Fraction of the 95th percentile intensity to use for masking
 
 %% Load B0 data from twix
 %field_twix = mapVBVD('meas_MID00098_FID09057_gre_field_mapping_xyz0.dat');
@@ -48,7 +49,9 @@ if roi_exist
     %     imshow(rot90((img_phz2-img_phz1).*mask_m/ratio,RotIndex),[-scale scale]);colorbar;colormap 'jet'
 
 elseif autoroi % More rapid ROI selection from single points
-    mask_m = rot90(point_mask(rot90(img_mag,RotIndex),10,0.9),-RotIndex);
+    VoxSz_mm = abs(posX(2)-posX(1)); % Assume isotropic
+    r_vox = r_mm / VoxSz_mm;
+    mask_m = rot90(point_mask(rot90(img_mag,RotIndex),r_vox,Frac),-RotIndex);
     save('mask_shim.mat',"mask_m")
 
 else  % Standard ROI drawing
