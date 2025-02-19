@@ -3,7 +3,7 @@ function mask_roi=point_mask(Im, r, Frac)
 %%%%Tom Okell created, Feb 2025 %%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %ImForDisp=mean(abs(Im),3); % Average over slices/echos if provided
-ImForDisp=abs(Im(:,:,ceil(end/2))); % Average over slices/echos if provided
+ImForDisp=abs(Im(:,:,ceil(end/2))); % Use central slice
 
 DispIm(ImForDisp,0,99); colormap gray;
 title 'Click to select the centre of each vessel. Press "q" to finish.'
