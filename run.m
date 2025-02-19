@@ -156,3 +156,10 @@ for i=1:nz
     subplot(224),imshow(rot90(abs(sim_p_m),3),[0 60]);colorbar;colormap 'jet'; title('abs-simulated')
 end
 
+% T.O. Add histogram of off-resonance before and after correction
+figure; histogram(phz_ini(mask_m>0)/ratio); hold on
+histogram(phz_sim(mask_m>0)/ratio); 
+title 'Off-resonance frequencies within the mask'
+xlabel 'Frequency/Hz'; ylabel 'Count'
+legend({'Before dyn shim','After dyn shim'})
+
