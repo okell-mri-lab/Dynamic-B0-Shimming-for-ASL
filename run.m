@@ -13,7 +13,7 @@ r = 5; % mm, radius of initial masks
 %field_twix = mapVBVD('meas_MID00098_FID09057_gre_field_mapping_xyz0.dat');
 %field_twix = mapVBVD('~/Data/7T_ASL_Tests/2025-01-23/Raw_data/meas_MID00067_FID39515_to_gre_field_mapping_dyn_shim_online.dat');
 %field_twix = mapVBVD('~/Data/7T_ASL_Tests/2025-02-04-phantom/Raw_data/meas_MID00101_FID40728_to_gre_field_mapping_dyn_shim_online.dat');
-field_twix = mapVBVD('~/Data/7T_ASL_Tests/2025-02-04-subject/Raw_data/meas_MID00127_FID40754_to_gre_field_mapping_dyn_shim_online.dat');
+field_twix = mapVBVD('/Users/tokell/Data/7T_ASL_Tests/2025-02-19-subject/Raw_data/meas_MID00078_FID43014_yj_fieldmap_2mm_5slc.dat');
 [img_M,img_Punw,dte,img_Pini] = get_fieldmap(field_twix);
 
 
