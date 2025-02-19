@@ -118,7 +118,7 @@ fprintf('   FreqZ offset = %.1f Hz\n', gf1);
 dGx_s= deltG(1);  %uT/m
 dGy_s= deltG(2);  %uT/m
 dGz_s= deltG(3); %uT/m
-FreqOff_s=aw(4);% Hz
+FreqOff_s=aw(4)/(2*pi*dte/1000);% Hz % T.O. tweak to be consistent with above
 
 aw_s(1,1)=dGx_s*(dte*gamma*2*pi)/1e6;
 aw_s(2,1)=dGy_s*(dte*gamma*2*pi)/1e6;
