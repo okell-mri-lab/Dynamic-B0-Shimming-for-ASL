@@ -1,8 +1,19 @@
-clc;clear;close all;warning('on','all')
-addpath '.\functions'
+%clc;
+clear;close all;warning('on','all')
+if ismac || isunix
+    addpath './functions'
+else
+    addpath '.\functions'
+end
+
 roi_exist=0;
+autoroi = true; % T.O. Add option to define ROIs in a more automated way
+r_mm = 5; % mm, radius of initial masks
+Frac = 0.9; % Fraction of the 95th percentile intensity to use for masking
+
 %% Load B0 data from twix
 field_twix = mapVBVD('meas_MID00098_FID09057_gre_field_mapping_xyz0.dat');
+
 [img_M,img_Punw,dte,img_Pini] = get_fieldmap(field_twix);
 
 
@@ -26,6 +37,8 @@ CS = ones(nx,ny,nz);
 H  = [PX(:) PY(:) PZ(:) CS(:)];
 
 %%  draw ROI
+RotIndex=3;
+
 if roi_exist
     load('mask_shim.mat')
 
@@ -33,9 +46,15 @@ if roi_exist
     %     ratio=2*pi*dte/1000;
     %     scale=350;
     %     imshow(rot90((img_phz2-img_phz1).*mask_m/ratio,RotIndex),[-scale scale]);colorbar;colormap 'jet'
-else
+
+elseif autoroi % More rapid ROI selection from single points
+    VoxSz_mm = abs(posX(2)-posX(1)); % Assume isotropic
+    r_vox = r_mm / VoxSz_mm;
+    mask_m = rot90(point_mask(rot90(img_mag,RotIndex),r_vox,Frac),-RotIndex);
+    save('mask_shim.mat',"mask_m")
+
+else  % Standard ROI drawing
     %     mask_m0 = sum(draw_mask(rot90(img_tof(:,:,slcInd),RotIndex),0.5),3);
-    RotIndex=3;
     for i=1:nz
         mask_m0 = sum(draw_mask(rot90(img_mag(:,:,i),RotIndex),0.5),3);
         mask_m(:,:,i)=rot90(mask_m0,-RotIndex);
@@ -101,7 +120,7 @@ fprintf('   FreqZ offset = %.1f Hz\n', gf1);
 dGx_s= deltG(1);  %uT/m
 dGy_s= deltG(2);  %uT/m
 dGz_s= deltG(3); %uT/m
-FreqOff_s=aw(4);% Hz
+FreqOff_s=aw(4)/(2*pi*dte/1000);% Hz % T.O. tweak to be consistent with above
 
 aw_s(1,1)=dGx_s*(dte*gamma*2*pi)/1e6;
 aw_s(2,1)=dGy_s*(dte*gamma*2*pi)/1e6;
@@ -138,4 +157,11 @@ for i=1:nz
     subplot(223),imshow(rot90(sim_p,3),[-scale scale]);colorbar;colormap 'jet'; title('after DynShim')
     subplot(224),imshow(rot90(abs(sim_p_m),3),[0 60]);colorbar;colormap 'jet'; title('abs-simulated')
 end
+
+% T.O. Add histogram of off-resonance before and after correction
+figure; histogram(phz_ini(mask_m>0)/ratio); hold on
+histogram(phz_sim(mask_m>0)/ratio); 
+title 'Off-resonance frequencies within the mask'
+xlabel 'Frequency/Hz'; ylabel 'Count'
+legend({'Before dyn shim','After dyn shim'})
 
