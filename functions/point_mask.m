@@ -39,14 +39,14 @@ mask_roi = false(size(ImForDisp));
 
 % Draw an ROI around each point
 for ii = 1:size(points,1)
-    mask_roi(((xg - points(ii,1)).^2 + (yg - points(ii,2)).^2) <= r ) = true;
+    mask_roi(sqrt((xg - points(ii,1)).^2 + (yg - points(ii,2)).^2) <= r ) = true;
 end
 
 % Extend across slices
 mask_roi = repmat(mask_roi,[1 1 size(Im,3)]); 
 
 % Show the intial mask
-DispIm(mask_roi + abs(Im)/max(abs(Im(:))),0,99);
+figure; OverlayMaskOutline(RescaleIm(Im,0,99),mask_roi,[1 0 0]);
 title 'Initial mask'
 
 % Threshold at the relevant fraction of the 95th percentile
@@ -54,7 +54,7 @@ Thr = prctile(abs(Im(:)),95) * Frac;
 mask_roi = mask_roi .* (abs(Im) >= Thr);
 
 % Show the final mask
-DispIm(mask_roi + abs(Im)/max(abs(Im(:))),0,99);
+figure; OverlayMaskOutline(RescaleIm(Im,0,99),mask_roi,[1 0 0]);
 title 'Final mask'
 
 end
