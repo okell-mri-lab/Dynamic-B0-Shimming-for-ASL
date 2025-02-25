@@ -163,12 +163,11 @@ fprintf('   Y-shim = %.1f μT/m \n', deltGy);
 fprintf('   Z-shim = %.1f μT/m \n', deltGz);
 fprintf('   FreqZ offset = %.1f Hz\n', Const_freqOff);
 
-%% 
-% simulated B0 maps
-dGx_s= deltG(1);  %uT/m
-dGy_s= deltG(2);  %uT/m
-dGz_s= deltG(3); %uT/m
-FreqOff_s=aw(4)/(2*pi*dte/1000);% Hz % T.O. tweak to be consistent with above
+%% Simulated B0 maps
+dGx_s= deltGx;  %uT/m
+dGy_s= deltGy;  %uT/m
+dGz_s= deltGz;  %uT/m
+FreqOff_s=-Const_freqOff;% Hz % T.O. tweak to be consistent with above
 
 aw_s(1,1)=dGx_s*(dte*gamma*2*pi)/1e6;
 aw_s(2,1)=dGy_s*(dte*gamma*2*pi)/1e6;
@@ -178,16 +177,8 @@ aw_s(4,1)=FreqOff_s*(2*pi*dte/1000);
 phz_compen_s=reshape(H*aw_s,nx,ny,nz);
 phz_sim=phz_compen_s+phz_ini;
 
-if nz<2
-    aw_s(3,1)=0;
-end
-aw_s(4,1)=0;
-phz_sim2=reshape(H*aw_s,nx,ny,nz)+phz_ini;
-a2=(phz_sim2)/(2*pi*dte/1000);
-m2=mean(a2(mask_m>0));
-% fprintf('\n---Global_FreqOff after DynShim_XY = %.1f Hz\n', m2);
 
-%% 
+%% Plot pre- and post-dynamic shim fieldmaps
 scale=350;
 ratio=2*pi*dte/1000;
 for i=1:nz
