@@ -1,18 +1,53 @@
-%clc;
-clear;close all;warning('on','all')
-if ismac || isunix
-    addpath './functions'
-else
-    addpath '.\functions'
-end
+% Calculate gradient offset and global frequency offset terms required to
+% achieve good B0 homogeneity within the neck for PCASL labelling.
+%
+% [deltGx, deltGy, deltGz, Const_freqOff] = calc_pcasl_dyn_shim(rawFname, roi_exist, autoroi, r_mm, Frac, GlobFreqCorrOnly)
+%
+% Inputs:
+%   rawFname                Raw meas.dat file name of the dual-echo fieldmap
+%                           acquisition in the neck
+%   roi_exist               Flag to state that mask_shim.mat exists in the current
+%                           directory/path and should be loaded rather than generating
+%                           a new mask
+%   autoroi                 Flag to state a new ROI should be defined automatically by
+%                           the user selecting the centre of each vessel within the
+%                           central slice
+%   r_mm                    Radius of the initial cylindrical masks generated around each 
+%                           vessel with autoroi
+%   Frac                    Fraction of the 95th percentile magnitude signal that is used 
+%                           to threshold the initial autoroi mask
+%   GlobFreqCorrOnly        Apply a global frequency correction only (no
+%                           linear terms)
+%
+% Outputs:
+%   deltGx, deltGy, deltGz  Change in the linear shim terms required to
+%                           correct for B0 inhomogeneity, in uT/m
+%   Const_freqOff           Global frequency offset required for
+%                           correction, in Hz
 
-roi_exist=0;
-autoroi = true; % T.O. Add option to define ROIs in a more automated way
-r_mm = 5; % mm, radius of initial masks
-Frac = 0.9; % Fraction of the 95th percentile intensity to use for masking
+function [deltGx, deltGy, deltGz, Const_freqOff] = calc_pcasl_dyn_shim(rawFname, roi_exist, autoroi, r_mm, Frac, GlobFreqCorrOnly)
+
+% Set defaults for parameters not provided or empty
+if nargin < 1 || isempty(rawFname);         rawFname = togetfile('Select raw meas.dat file');  end
+if nargin < 2 || isempty(roi_exist);        roi_exist = false;                                 end
+if nargin < 3 || isempty(autoroi);          autoroi = true;                                    end
+if nargin < 4 || isempty(r_mm);             r_mm = 5;                                          end
+if nargin < 5 || isempty(Frac);             Frac = 0.5;                                        end
+if nargin < 5 || isempty(GlobFreqCorrOnly); GlobFreqCorrOnly = false;                          end
+
+warning('on','all')
+
+% Find the directory of this file
+mfiledir = fileparts(mfilename("fullpath"));
+
+% Add the functions subdirectory
+funcdir = fullfile(mfiledir,'functions');
+disp(['Adding functions subdirectory to the path: ' funcdir])
+addpath(funcdir);
+
 
 %% Load B0 data from twix
-field_twix = mapVBVD('meas_MID00098_FID09057_gre_field_mapping_xyz0.dat');
+field_twix = mapVBVD(rawFname);
 
 [img_M,img_Punw,dte,img_Pini] = get_fieldmap(field_twix);
 
@@ -39,7 +74,7 @@ H  = [PX(:) PY(:) PZ(:) CS(:)];
 %%  draw ROI
 RotIndex=3;
 
-if roi_exist
+if roi_exist % Read from file if requested
     load('mask_shim.mat')
 
     %     figure;
@@ -53,7 +88,7 @@ elseif autoroi % More rapid ROI selection from single points
     mask_m = rot90(point_mask(rot90(img_mag,RotIndex),r_vox,Frac),-RotIndex);
     save('mask_shim.mat',"mask_m")
 
-else  % Standard ROI drawing
+else  % Standard ROI drawing for each slice separately
     %     mask_m0 = sum(draw_mask(rot90(img_tof(:,:,slcInd),RotIndex),0.5),3);
     for i=1:nz
         mask_m0 = sum(draw_mask(rot90(img_mag(:,:,i),RotIndex),0.5),3);

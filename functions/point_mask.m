@@ -46,7 +46,7 @@ end
 mask_roi = repmat(mask_roi,[1 1 size(Im,3)]); 
 
 % Show the intial mask
-DispIm(mask_roi + abs(Im)/max(abs(Im(:))),0,99)
+DispIm(mask_roi + abs(Im)/max(abs(Im(:))),0,99);
 title 'Initial mask'
 
 % Threshold at the relevant fraction of the 95th percentile
@@ -54,7 +54,7 @@ Thr = prctile(abs(Im(:)),95) * Frac;
 mask_roi = mask_roi .* (abs(Im) >= Thr);
 
 % Show the final mask
-DispIm(mask_roi + abs(Im)/max(abs(Im(:))),0,99)
+DispIm(mask_roi + abs(Im)/max(abs(Im(:))),0,99);
 title 'Final mask'
 
 end
