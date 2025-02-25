@@ -33,8 +33,8 @@ function [deltGx, deltGy, deltGz, Const_freqOff] = calc_pcasl_dyn_shim(rawFname,
 if nargin < 1 || isempty(rawFname);         rawFname = togetfile('Select raw meas.dat file');  end
 if nargin < 2 || isempty(roi_exist);        roi_exist = false;                                 end
 if nargin < 3 || isempty(autoroi);          autoroi = true;                                    end
-if nargin < 4 || isempty(r_mm);             r_mm = 5;                                          end
-if nargin < 5 || isempty(Frac);             Frac = 0.5;                                        end
+if nargin < 4 || isempty(r_mm);             r_mm = 4;                                          end
+if nargin < 5 || isempty(Frac);             Frac = 0.9;                                        end
 if nargin < 6 || isempty(Shim2DOnly);       Shim2DOnly = false;                                end
 if nargin < 7 || isempty(GlobFreqCorrOnly); GlobFreqCorrOnly = false;                          end
 
