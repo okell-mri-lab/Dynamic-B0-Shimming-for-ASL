@@ -1,7 +1,7 @@
 % Calculate gradient offset and global frequency offset terms required to
 % achieve good B0 homogeneity within the neck for PCASL labelling.
 %
-% [deltGx, deltGy, deltGz, Const_freqOff] = calc_pcasl_dyn_shim(rawFname, roi_exist, autoroi, r_mm, Frac, GlobFreqCorrOnly)
+% [deltGx, deltGy, deltGz, Const_freqOff] = calc_pcasl_dyn_shim(rawFname, roi_exist, autoroi, r_mm, Frac, Shim2DOnly, GlobFreqCorrOnly)
 %
 % Inputs:
 %   rawFname                Raw meas.dat file name of the dual-echo fieldmap
@@ -16,6 +16,8 @@
 %                           vessel with autoroi
 %   Frac                    Fraction of the 95th percentile magnitude signal that is used 
 %                           to threshold the initial autoroi mask
+%   Shim2DOnly              Apply a 2D correction only (using the central
+%                           slice of the fieldmap if there are multiple slices).
 %   GlobFreqCorrOnly        Apply a global frequency correction only (no
 %                           linear terms)
 %
@@ -25,7 +27,7 @@
 %   Const_freqOff           Global frequency offset required for
 %                           correction, in Hz
 
-function [deltGx, deltGy, deltGz, Const_freqOff] = calc_pcasl_dyn_shim(rawFname, roi_exist, autoroi, r_mm, Frac, GlobFreqCorrOnly)
+function [deltGx, deltGy, deltGz, Const_freqOff] = calc_pcasl_dyn_shim(rawFname, roi_exist, autoroi, r_mm, Frac, Shim2DOnly, GlobFreqCorrOnly)
 
 % Set defaults for parameters not provided or empty
 if nargin < 1 || isempty(rawFname);         rawFname = togetfile('Select raw meas.dat file');  end
@@ -33,7 +35,8 @@ if nargin < 2 || isempty(roi_exist);        roi_exist = false;                  
 if nargin < 3 || isempty(autoroi);          autoroi = true;                                    end
 if nargin < 4 || isempty(r_mm);             r_mm = 5;                                          end
 if nargin < 5 || isempty(Frac);             Frac = 0.5;                                        end
-if nargin < 5 || isempty(GlobFreqCorrOnly); GlobFreqCorrOnly = false;                          end
+if nargin < 6 || isempty(Shim2DOnly);       Shim2DOnly = false;                                end
+if nargin < 7 || isempty(GlobFreqCorrOnly); GlobFreqCorrOnly = false;                          end
 
 warning('on','all')
 
@@ -51,8 +54,12 @@ field_twix = mapVBVD(rawFname);
 
 [img_M,img_Punw,dte,img_Pini] = get_fieldmap(field_twix);
 
+if Shim2DOnly % Just select the central slice
+    slcInd = ceil(size(img_M,3)/2);
+else % Use all slices
+    slcInd=1:size(img_M,3);
+end
 
-slcInd=[1:size(img_M,3)];
 img_mag = img_M   (:,:,slcInd);
 img_P1  = img_Punw(:,:,slcInd);
 img_P2  = img_Pini(:,:,slcInd);
@@ -77,10 +84,6 @@ RotIndex=3;
 if roi_exist % Read from file if requested
     load('mask_shim.mat')
 
-    %     figure;
-    %     ratio=2*pi*dte/1000;
-    %     scale=350;
-    %     imshow(rot90((img_phz2-img_phz1).*mask_m/ratio,RotIndex),[-scale scale]);colorbar;colormap 'jet'
 
 elseif autoroi % More rapid ROI selection from single points
     VoxSz_mm = abs(posX(2)-posX(1)); % Assume isotropic
@@ -88,8 +91,7 @@ elseif autoroi % More rapid ROI selection from single points
     mask_m = rot90(point_mask(rot90(img_mag,RotIndex),r_vox,Frac),-RotIndex);
     save('mask_shim.mat',"mask_m")
 
-else  % Standard ROI drawing for each slice separately
-    %     mask_m0 = sum(draw_mask(rot90(img_tof(:,:,slcInd),RotIndex),0.5),3);
+else  % Standard ROI drawing for each slice separately    
     for i=1:nz
         mask_m0 = sum(draw_mask(rot90(img_mag(:,:,i),RotIndex),0.5),3);
         mask_m(:,:,i)=rot90(mask_m0,-RotIndex);
@@ -107,7 +109,7 @@ else  % Standard ROI drawing for each slice separately
 end
 
 
-%% calculate linear term of the shimming gradient
+%% calculate linear terms of the shimming gradient
 phz_compen = -phz_ini(:);
 mask_v = mask_m(:);
 HWH = H'*((mask_v*ones(1,4)).*H);
@@ -125,30 +127,41 @@ deltGy = deltG(2);%μT/m
 deltGz = deltG(3);%μT/m
 Const_freqOff = aw(4)/(2*pi*dte/1000);% Hz
 
-fprintf('\n%%%%%%%%%%  2d&3d dynamic shimming method %%%%%%%%%%\n')
-fprintf('   Input the following values into the special card:\n')
+% For a single slice fieldmap, there is ambiguity between Gz and the global
+% frequency offset, so force Gz to zero here and correct the global
+% frequency term
+if nz==1
+    Const_freqOff = -(gamma*deltGz*posZ/1000+Const_freqOff);
+    deltGz = 0;
+else % Just correct the sign
+    Const_freqOff = -Const_freqOff;
+end
+
 % global frequency offset of initial map
 a1=phz_ini/(2*pi*dte/1000);
 gf1=mean(a1(mask_m>0));
 
-%fprintf('Global_FreqOff before DynShim_XY = %.1f Hz\n', gf1);
+% For the global offset correction, set the linear terms to zero and update
+% the frequency correction required
+if GlobFreqCorrOnly
+    deltGx = 0; deltGy = 0; deltGz = 0;
+    Const_freqOff = gf1;
+end
+
+% Print the correction factors to the screen
+if GlobFreqCorrOnly % Full 2D/3D dynamic shimming
+    fprintf('\n%%%%%%%%%% Global frequency offset correction method %%%%%%%%%%\n')
+elseif Shim2DOnly
+    fprintf('\n%%%%%%%%%%  2D dynamic shimming method %%%%%%%%%%\n')
+else
+    fprintf('\n%%%%%%%%%%  3D dynamic shimming method %%%%%%%%%%\n')
+end
+fprintf('   Input the following values into the special card:\n')
+
 fprintf('   X-shim = %.1f μT/m \n', deltGx);
 fprintf('   Y-shim = %.1f μT/m \n', deltGy);
-if nz==1
-    fprintf('   Z-shim = 0 μT/m \n');
-    gf2 = -(gamma*deltGz*posZ/1000+Const_freqOff);
-    fprintf('   FreqZ offset = %.1f Hz\n', gf2);   
-else
-    fprintf('   Z-shim = %.1f μT/m \n', deltGz);
-    gf2 = -Const_freqOff;
-    fprintf('   FreqZ offset = %.1f Hz\n', gf2);  
-end
-fprintf('\n%%%%%%%%%% Global frequency offset correction method %%%%%%%%%%\n')
-fprintf('   Input the following values into the special card:\n')
-fprintf('   X-shim = 0 μT/m \n');
-fprintf('   Y-shim = 0 μT/m \n');
-fprintf('   Z-shim = 0 μT/m \n');
-fprintf('   FreqZ offset = %.1f Hz\n', gf1);
+fprintf('   Z-shim = %.1f μT/m \n', deltGz);
+fprintf('   FreqZ offset = %.1f Hz\n', Const_freqOff);
 
 %% 
 % simulated B0 maps
