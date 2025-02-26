@@ -12,10 +12,13 @@ Instead, here we propose optimising the static shim for the brain but then dynam
 This Matlab code allows the reading in and reconstruction of raw k-space double-echo fieldmap data, interactive selection of vessel ROIs and outputs the required linear shim and global frequency offset terms required for optimal correction during the PCASL labelling period.
 
 ## Code structure
-The main dynamic shim calculation is performed in `run.m`, which calls a number of other functions in the `functions` folder.  A few options are available that can be set in `run.m`:
-- `roi_exist`: If set to true, the code will look for a file named `mask_shim.mat` and load this to use as the vessel mask.
-- `autoroi`: If set to true, the user is prompted to interactively select the central point of each vessel from the central slice. A cylindrical ROI is then created around this point with radius defined by `r_mm`. To avoid include noisy voxels (e.g. air), the mask is further thresholded at `Frac` * 95th percentile signal intensity within the initial mask.
-- If both of the above are set to false, the user is prompted to draw a manual polygon ROI over each vessel within each slice.
+The main dynamic shim calculation is performed in `calc_pcasl_dyn_shim.m`, which calls a number of other functions in the `functions` folder (which is added to the Matlab path automatically).  A few options are available when you call `calc_pcasl_dyn_shim`:
+- `rawFname`: Raw Siemens dual-echo fieldmap data (meas.dat) file name. If not provided, you will be prompted to select a file.
+- `roi_exist`: If set to true, the code will look for a file named `mask_shim.mat` in the current directory/path and load this to use as the vessel mask.
+- `autoroi`: If set to true, you are prompted to interactively select the central point of each vessel from the central slice. A cylindrical ROI is then created around this point with radius defined by `r_mm`. To avoid including noisy voxels (e.g. air), the mask is further thresholded at `Frac` * 95th percentile signal intensity within the initial mask.
+- If both of the above are set to false, you are prompted to draw a manual polygon ROI over each vessel within each slice.
+- `Shim2DOnly`: If set to true, only the central fieldmap slice is used to calculate the dynamic shim terms (with the $z$ term set to zero).
+- `GlobFreqCorrOnly`: If set to true, only the global frequency offset term is provided, with the linear shim terms all set to zero.
 
 ## External dependencies
 Tested using MATLAB 2024b. We rely on the excellent `mapVBVD` by Philipp Ehses and colleagues. The original version can be found here: https://github.com/pehses/mapVBVD. 

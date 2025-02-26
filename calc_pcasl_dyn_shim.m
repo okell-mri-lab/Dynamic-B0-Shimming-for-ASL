@@ -29,15 +29,6 @@
 
 function [deltGx, deltGy, deltGz, Const_freqOff] = calc_pcasl_dyn_shim(rawFname, roi_exist, autoroi, r_mm, Frac, Shim2DOnly, GlobFreqCorrOnly)
 
-% Set defaults for parameters not provided or empty
-if nargin < 1 || isempty(rawFname);         rawFname = togetfile('Select raw meas.dat file');  end
-if nargin < 2 || isempty(roi_exist);        roi_exist = false;                                 end
-if nargin < 3 || isempty(autoroi);          autoroi = true;                                    end
-if nargin < 4 || isempty(r_mm);             r_mm = 4;                                          end
-if nargin < 5 || isempty(Frac);             Frac = 0.9;                                        end
-if nargin < 6 || isempty(Shim2DOnly);       Shim2DOnly = false;                                end
-if nargin < 7 || isempty(GlobFreqCorrOnly); GlobFreqCorrOnly = false;                          end
-
 warning('on','all')
 
 % Find the directory of this file
@@ -48,6 +39,14 @@ funcdir = fullfile(mfiledir,'functions');
 disp(['Adding functions subdirectory to the path: ' funcdir])
 addpath(funcdir);
 
+% Set defaults for parameters not provided or empty
+if nargin < 1 || isempty(rawFname);         rawFname = togetfile('Select raw meas.dat file');  end
+if nargin < 2 || isempty(roi_exist);        roi_exist = false;                                 end
+if nargin < 3 || isempty(autoroi);          autoroi = true;                                    end
+if nargin < 4 || isempty(r_mm);             r_mm = 4;                                          end
+if nargin < 5 || isempty(Frac);             Frac = 0.9;                                        end
+if nargin < 6 || isempty(Shim2DOnly);       Shim2DOnly = false;                                end
+if nargin < 7 || isempty(GlobFreqCorrOnly); GlobFreqCorrOnly = false;                          end
 
 %% Load B0 data from twix
 field_twix = mapVBVD(rawFname);
